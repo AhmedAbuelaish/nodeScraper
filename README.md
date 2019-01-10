@@ -14,7 +14,7 @@ $ npm install
 ## How To Use Image Search
 ### Command Line
 ```sh
-$ node scraper.js [keyword] [pagenumber: optional] [--new: optional]
+$ node imgSearch.js [keyword] [pagenumber: optional] [--new: optional]
 ```
 - keyword: term to search for. *Use '%' instead of space*
 - pagenumber: *[optional]* integer
