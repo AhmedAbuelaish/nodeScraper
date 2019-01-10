@@ -4,7 +4,7 @@
 // Command line:
 // node scraper.js [keyword] [pagenumber: optional] [--new: optional]
 // Keyword: use '%' instead of 'space'
-// 
+//
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                Dependencies
@@ -21,10 +21,10 @@ const pgpromise = require('pg-promise')()
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Creates the config. user can be anything
 const config = {
-  host: 'localhost',
-  port: 5432,
-  database: 'music', // <-------------- update to current db name
-  user: 'postgres'
+	host: 'localhost',
+	port: 5432,
+	database: 'music', // <-------------- update to current db name
+	user: 'postgres'
 }
 const db = pgpromise(config)
 
@@ -37,10 +37,12 @@ var fileCommand = process.argv[4] // <------------- use '--new' to erase previou
 var firstImg = 1
 // check if optional argument 3 exists
 if (isNaN(process.argv[3])) {
-  pageNumber = 1
-  fileCommand = process.argv[3]
+	pageNumber = 1
+	fileCommand = process.argv[3]
 }
-if (pageNumber) { firstImg = ((pageNumber - 1) * 30) + 1 }
+if (pageNumber) {
+	firstImg = (pageNumber - 1) * 30 + 1
+}
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                Scraping Target
@@ -56,73 +58,76 @@ const divClass = `img`
 getData()
 
 // Scraper function
-function getData () {
-  // Returns an array of data items
-  console.log(`[Requesting...]`, scrapeURL)
+function getData() {
+	// Returns an array of data items
+	console.log(`[Requesting...]`, scrapeURL)
 
-  request(scrapeURL, (error, response, html) => {
-    if (!error && response.statusCode == 200) {
-        const $ = cheerio.load(html)
-        const dataArray = []
+	request(scrapeURL, (error, response, html) => {
+		if (!error && response.statusCode == 200) {
+			const $ = cheerio.load(html)
+			const dataArray = []
+			var dataArrayMod = []
 
-        $(divClass).each(function (i, el) {
-        // var dataItem = $(el).html()
-        var dataItem = $(el).attr('src')
+			$(divClass).each(function(i, el) {
+				// var dataItem = $(el).html()
+				var dataItem = $(el).attr('src')
 
-        // ~~~~~~~~~~STRING MODIFIER~~~~~~~~~~~~~~~~~~
-        // Modify the string -- Replace \n with ''
-        // dataItem = dataItem.replace(/\n/gi, ``);
+				// Push the result into an array
+				if (i != 0) {
+					// dataArray.push(`('`+dataItem+`')`)
+					// dataArray.push(`<img src="${dataItem}">`)
+					dataArray.push(dataItem)
+				}
+			})
 
-        // Push the string into the array
-        if (i != 0) {
-            // dataArray.push(`('`+dataItem+`')`)
-            // dataArray.push(`<img src="${dataItem}">`)
-            dataArray.push(`<img src="${dataItem}">`)
-        }
-        })     
+			// ~~~~~~~~~~STRING MODIFIER~~~~~~~~~~~~~~~~~~
+			dataArrayMod = dataArray.map(stringModifier)
+			function stringModifier(arrayEl) {
+				// Modify the string -- Replace \n with ''
+				// return arrayEl.replace(/\n/gi, ``)
+				return `<img src="${arrayEl}">`
+			}
+			const dataString = dataArrayMod.join(' ').toString()
 
-        const dataString = dataArray.join(' ').toString()
-
-        // ~~~~~~~~~~SAVE DATA OPTIONS~~~~~~~~~~~~~~~~~~
-        // writeToDB(dataString)
-        writeToFile(dataString, 'index.html')
-        writeToFile(dataArray, 'data.js')
-    }
-  })
+			// ~~~~~~~~~~SAVE DATA OPTIONS~~~~~~~~~~~~~~~~~~
+			// writeToDB(dataString)
+			writeToFile(dataString, 'index.html')
+			writeToFile(dataArray+',', 'data.csv')
+		}
+	})
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                 DB Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // DB write function -- includes postgres query
-function writeToDB (stringToWrite) {
-  const query = `
+function writeToDB(stringToWrite) {
+	const query = `
         INSERT INTO music (name)
             VALUES ${stringToWrite};`
 
-  db.query(query)
-    .then(function (results) {
-      console.log(results)
-    })
+	db.query(query).then(function(results) {
+		console.log(results)
+	})
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                File Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-function writeToFile (dataToWrite, fileName) {
-  if (fileCommand !== '--new') {
-    fs.appendFile(fileName, dataToWrite, 'utf8', (err) => {
-      if (err) {
-        return console.log(err)
-      }
-      console.log(`[Appended] ${keyword} data into ${fileName}`)
-    })
-  } else {
-    fs.writeFile(fileName, dataToWrite, 'utf8', (err) => {
-      if (err) {
-        return console.log(err)
-      }
-      console.log(`[Saved] ${keyword} data into ${fileName}`)
-    })
-  }
+function writeToFile(dataToWrite, fileName) {
+	if (fileCommand !== '--new') {
+		fs.appendFile(fileName, dataToWrite, err => {
+			if (err) {
+				return console.log(err)
+			}
+			console.log(`[Appended] ${keyword} data into ${fileName}`)
+		})
+	} else {
+		fs.writeFile(fileName, dataToWrite, err => {
+			if (err) {
+				return console.log(err)
+			}
+			console.log(`[Saved] ${keyword} data into ${fileName}`)
+		})
+	}
 }
