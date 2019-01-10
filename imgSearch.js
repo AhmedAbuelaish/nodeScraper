@@ -2,7 +2,7 @@
 //                How To
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Command line:
-// node scraper.js [keyword] [pagenumber: optional] [--new: optional]
+// node imgSearch.js [keyword] [pagenumber: optional] [--new: optional]
 // Keyword: use '%' instead of 'space'
 //
 
@@ -12,9 +12,9 @@
 const request = require('request')
 const cheerio = require('cheerio')
 const fs = require('fs')
+const pgpromise = require('pg-promise')()
 // const random = require('random')
 // const async = require('async')
-const pgpromise = require('pg-promise')()
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                      DB
@@ -23,7 +23,7 @@ const pgpromise = require('pg-promise')()
 const config = {
 	host: 'localhost',
 	port: 5432,
-	database: 'music', // <-------------- update to current db name
+	database: 'picturesdb', // <-------------- update to current db name
 	user: 'postgres'
 }
 const db = pgpromise(config)
