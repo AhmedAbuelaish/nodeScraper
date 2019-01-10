@@ -1,3 +1,14 @@
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                How To
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Command line:
+// node scraper.js [keyword] [pagenumber: optional] [--new: optional]
+// Keyword: use '%' instead of 'space'
+// 
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                Dependencies
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const request = require('request')
 const cheerio = require('cheerio')
 const fs = require('fs')
@@ -5,92 +16,113 @@ const fs = require('fs')
 // const async = require('async')
 const pgpromise = require('pg-promise')()
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                      DB
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Creates the config. user can be anything
 const config = {
-    host: 'localhost',
-    port: 5432,
-    database: 'music', // <-------------- update to current db name
-    user: 'postgres'
+  host: 'localhost',
+  port: 5432,
+  database: 'music', // <-------------- update to current db name
+  user: 'postgres'
 }
-
 const db = pgpromise(config)
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//            Node Command Line Inputs
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const keyword = process.argv[2] // <------------- use '%' instead of 'space'
-const fileCommand = process.argv[3] // <------------- use 'append' to add to the file instead of overwriting
+var pageNumber = process.argv[3] // <-------------- default = 1
+var fileCommand = process.argv[4] // <------------- use '--new' to erase previous results and replace
+var firstImg = 1
+// check if optional argument 3 exists
+if (isNaN(process.argv[3])) {
+  pageNumber = 1
+  fileCommand = process.argv[3]
+}
+if (pageNumber) { firstImg = ((pageNumber - 1) * 30) + 1 }
 
-const scrapeURL = `https://www.bing.com/images/search?q=${keyword}&FORM=HDRSC2`
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                Scraping Target
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// const scrapeURL = `https://www.bing.com/images/search?q=${keyword}&FORM=HDRSC2`
+const scrapeURL = `https://www.bing.com/images/search?q=${keyword}&form=HDRSC2&first=${firstImg}&cw=1243&ch=698`
 const divClass = `img`
 
-
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                    Scraper
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Run the scraper function
 getData()
 
 // Scraper function
-function getData(){
-    // Returns an array of data items
-    console.log(`[Requesting...]`, scrapeURL)
+function getData () {
+  // Returns an array of data items
+  console.log(`[Requesting...]`, scrapeURL)
 
-    request(scrapeURL, (error,response,html) =>{
-        if(!error && response.statusCode == 200) {
+  request(scrapeURL, (error, response, html) => {
+    if (!error && response.statusCode == 200) {
+        const $ = cheerio.load(html)
+        const dataArray = []
 
-            const $ = cheerio.load(html)
-            // console.log(html)
+        $(divClass).each(function (i, el) {
+        // var dataItem = $(el).html()
+        var dataItem = $(el).attr('src')
 
-            const dataArray = []
-            // console.log($(divClass).html())
-            $(divClass).each(function (i,el) {
-                // var dataItem = $(el).html()
-                var dataItem = $(el).attr('src')
+        // ~~~~~~~~~~STRING MODIFIER~~~~~~~~~~~~~~~~~~
+        // Modify the string -- Replace \n with ''
+        // dataItem = dataItem.replace(/\n/gi, ``);
 
-                // ~~~~~~~~~~STRING MODIFIER~~~~~~~~~~~~~~~~~~
-                // Modify the string -- Replace \n with ''
-                // dataItem = dataItem.replace(/\n/gi, ``);
-
-                // Push the string into the array
-                if(i!=0){
-                    // dataArray.push(`('`+dataItem+`')`)
-                    dataArray.push(`<img src="${dataItem}">`)
-                }
-            })
-            const dataString = dataArray.join(' ').toString()
-            // console.log(dataString)
-
-            // writeToDB(dataString)
-            writeToFile(dataString)
-        
+        // Push the string into the array
+        if (i != 0) {
+            // dataArray.push(`('`+dataItem+`')`)
+            // dataArray.push(`<img src="${dataItem}">`)
+            dataArray.push(`<img src="${dataItem}">`)
         }
-    })     
+        })     
+
+        const dataString = dataArray.join(' ').toString()
+
+        // ~~~~~~~~~~SAVE DATA OPTIONS~~~~~~~~~~~~~~~~~~
+        // writeToDB(dataString)
+        writeToFile(dataString, 'index.html')
+        writeToFile(dataArray, 'data.js')
+    }
+  })
 }
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                 DB Functions
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // DB write function -- includes postgres query
 function writeToDB (stringToWrite) {
-    const query = `
+  const query = `
         INSERT INTO music (name)
             VALUES ${stringToWrite};`
 
-    db.query(query)
-        .then(function (results){
-            console.log(results)
-        })
+  db.query(query)
+    .then(function (results) {
+      console.log(results)
+    })
 }
 
-// Write to file in current directory
-const fileName = 'index.html'
-
-function writeToFile (stringToWrite) {
-    if (fileCommand=='append') {
-        fs.appendFile(fileName, stringToWrite, 'utf8', (err) =>{
-            if (err) {
-                return console.log(err)
-              }
-            console.log(`[Appended] ${keyword} data into ${fileName}`)
-        })
-    } else {
-        fs.writeFile(fileName, stringToWrite, 'utf8', (err) =>{
-            if (err) {
-                return console.log(err)
-            }
-            console.log(`[Saved] ${keyword} data into ${fileName}`)
-        })
-    }
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                File Functions
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function writeToFile (dataToWrite, fileName) {
+  if (fileCommand !== '--new') {
+    fs.appendFile(fileName, dataToWrite, 'utf8', (err) => {
+      if (err) {
+        return console.log(err)
+      }
+      console.log(`[Appended] ${keyword} data into ${fileName}`)
+    })
+  } else {
+    fs.writeFile(fileName, dataToWrite, 'utf8', (err) => {
+      if (err) {
+        return console.log(err)
+      }
+      console.log(`[Saved] ${keyword} data into ${fileName}`)
+    })
+  }
 }
