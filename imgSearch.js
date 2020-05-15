@@ -35,21 +35,25 @@ const keyword = process.argv[2] // <------------- use '%' instead of 'space'
 var pageNumber = process.argv[3] // <-------------- default = 1
 var fileCommand = process.argv[4] // <------------- use '--new' to erase previous results and replace
 var firstImg = 1
+var imgNumber = 1
 // check if optional argument 3 exists
 if (isNaN(process.argv[3])) {
 	pageNumber = 1
 	fileCommand = process.argv[3]
 }
-if (pageNumber) {
-	firstImg = (pageNumber - 1) * 30 + 1
-}
+// if (pageNumber) {
+// 	firstImg = (pageNumber - 1) * 30 + 1
+// }
 
+for (var i=1;i<=pageNumber;i++){
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                Scraping Target
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // const scrapeURL = `https://www.bing.com/images/search?q=${keyword}&FORM=HDRSC2`
-const scrapeURL = `https://www.bing.com/images/search?q=${keyword}&form=HDRSC2&first=${firstImg}&cw=1243&ch=698`
+const scrapeURL = `https://www.bing.com/images/search?q=${keyword}&form=HDRSC2&first=${imgNumber}&cw=1243&ch=698`
 const divClass = `img`
+
+imgNumber = i*30
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                    Scraper
@@ -91,8 +95,8 @@ function getData() {
 
 			// ~~~~~~~~~~SAVE DATA OPTIONS~~~~~~~~~~~~~~~~~~
 			// writeToDB(dataString)
-			writeToFile(dataString, 'index.html')
-			writeToFile(dataArray+',', 'data.csv')
+			writeToFile(dataString, 'data/index.html')
+			writeToFile(dataArray+',', 'data/data.csv')
 		}
 	})
 }
@@ -115,19 +119,22 @@ function writeToDB(stringToWrite) {
 //                File Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 function writeToFile(dataToWrite, fileName) {
-	if (fileCommand !== '--new') {
-		fs.appendFile(fileName, dataToWrite, err => {
-			if (err) {
-				return console.log(err)
-			}
-			console.log(`[Appended] ${keyword} data into ${fileName}`)
-		})
-	} else {
+	if (fileCommand == '--new') {
 		fs.writeFile(fileName, dataToWrite, err => {
 			if (err) {
 				return console.log(err)
 			}
 			console.log(`[Saved] ${keyword} data into ${fileName}`)
 		})
+	} else {
+		fs.appendFile(fileName, dataToWrite, err => {
+			if (err) {
+				return console.log(err)
+			}
+			console.log(`[Appended] ${keyword} data into ${fileName}`)
+		})
 	}
+}
+
+// End for loop
 }
