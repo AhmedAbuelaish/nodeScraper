@@ -50,7 +50,7 @@ for (var i=1;i<=pageNumber;i++){
 //                Scraping Target
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // const scrapeURL = `https://www.bing.com/images/search?q=${keyword}&FORM=HDRSC2`
-const scrapeURL = `https://www.bing.com/images/search?q=${keyword}&form=HDRSC2&first=${imgNumber}&cw=1243&ch=698`
+const scrapeURL = `https://www.bing.com/images/search?q=${keyword}&form=HDRSC3&first=${imgNumber}&cw=1243&ch=698`
 const divClass = `img`
 
 imgNumber = i*30
